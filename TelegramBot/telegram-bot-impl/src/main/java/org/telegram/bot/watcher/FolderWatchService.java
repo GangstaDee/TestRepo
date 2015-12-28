@@ -52,8 +52,8 @@ public class FolderWatchService implements Runnable {
                         File file = newPath.toFile();
                         if (file.getName().endsWith(".jar")) {
 
-                            JarClassLoader classLoader = new JarClassLoader(JarClassLoader.getSystemClassLoader());
-                            classLoader.loadJar(directory,file);
+                            JarClassLoader classLoader = new JarClassLoader(directory,file);
+                            classLoader.loadJar();
 
 
                         }
@@ -67,6 +67,8 @@ public class FolderWatchService implements Runnable {
             ex.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
 
     }

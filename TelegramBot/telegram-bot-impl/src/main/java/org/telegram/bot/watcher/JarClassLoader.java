@@ -4,9 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -15,30 +13,39 @@ import java.util.jar.JarFile;
  */
 public class JarClassLoader extends ClassLoader {
 
-    public JarClassLoader(ClassLoader parent) {
-        super(parent);
+    private File directory;
+    private File file;
+    private Map<String, Class> classes = new HashMap<>();
+
+    public JarClassLoader(File directory, File file) {
+        super(JarClassLoader.class.getClassLoader());
+        this.directory = directory;
+        this.file = file;
     }
 
     @Override
-    protected Class<?> findClass(final String name) throws ClassNotFoundException {
-        //byte[] classBytes = this.extraClassDefs.remove(name);
-        //if (classBytes != null) {
-        //    return defineClass(name, classBytes, 0, classBytes.length);
-        //}
+    public Class loadClass(String className) throws ClassNotFoundException {
+        return findClass(className);
+    }
+
+    @Override
+    protected Class findClass(final String name) throws ClassNotFoundException {
+
+        Class result = (Class) classes.get(name);
+        if (result != null) {
+            return result;
+        }
+            //return findSystemClass(name);
         return super.findClass(name);
     }
 
 
-    public void loadJar(File directory, File file) {
-
-        List<String> foundClasses = new ArrayList<>();
+    public void loadJar() {
 
         String jarPath = directory.getAbsolutePath() + "\\" + file.getName();
         try (JarFile jarFile = new JarFile(jarPath)) {
             Enumeration entries = jarFile.entries();
 
-            //URL[] urls = { new URL("jar:file:" + jarPath+"!/") };
-            //URLClassLoader cl = URLClassLoader.newInstance(urls);
 
             while (entries.hasMoreElements()) {
                 JarEntry jarEntry = (JarEntry) entries.nextElement();
@@ -50,7 +57,6 @@ public class JarClassLoader extends ClassLoader {
                         (0, jarEntry.getName().length() - ".class".length());
 
                 InputStream is = jarFile.getInputStream(jarEntry);
-                //byte[]b = readData(is);
 
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 int data = is.read();
@@ -64,30 +70,17 @@ public class JarClassLoader extends ClassLoader {
                 byte[] classData = buffer.toByteArray();
 
                 className = className.replace('/', '.');
-                defineClass(className, classData, 0, classData.length);
+                Class clazz = defineClass(className, classData, 0, classData.length);
 
-                //Class cl = loadClass(className);
-                //Class<?> aClass = Class.forName(className);
-                Class<?> aClass2 = findClass(className);
-                System.out.println(aClass2.getSimpleName());
-                //loadClass(className);
-                //foundClasses.add(className);
-                //try {
-                //Class c = cl.loadClass(className);
+                Class foundClass = findClass(className);
+                System.out.println(foundClass.getSimpleName());
 
-                // Object postman2 = (Object) c.newInstance();
-                //System.out.println(c.getName());
-//                } catch (ClassNotFoundException e) {
-//                    e.printStackTrace();
-//                }
+                classes.put(className,clazz);
 
             }
 
         } catch (IOException ex) {
             ex.printStackTrace();
-            //} catch (InterruptedException e) {
-            //   e.printStackTrace();
-            //}
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
