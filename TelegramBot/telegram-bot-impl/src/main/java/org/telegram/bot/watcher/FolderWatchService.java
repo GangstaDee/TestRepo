@@ -1,21 +1,15 @@
 package org.telegram.bot.watcher;
 
+import command.Command;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Objects;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import java.util.*;
 
 import static java.nio.file.StandardWatchEventKinds.*;
 
@@ -29,8 +23,7 @@ public class FolderWatchService implements Runnable {
 
     public void run() {
 
-        File directory = new File("c:\\Users\\Dasha.Selyavko\\IdeaProjects\\" +
-                "TelegramBot\\telegram-bot-command\\jars\\");
+        File directory = new File("#########");
         pathToWatch = directory.toPath();
 
         try (WatchService watcher = pathToWatch.getFileSystem().newWatchService()) {
@@ -52,8 +45,22 @@ public class FolderWatchService implements Runnable {
                         File file = newPath.toFile();
                         if (file.getName().endsWith(".jar")) {
 
-                            JarClassLoader classLoader = new JarClassLoader(directory,file);
-                            classLoader.loadJar();
+                            //move to separate handler
+                            Map<String, ByteArrayOutputStream> classData = JarUtils.loadJar(directory,file);
+
+                            ClassLoader parent = JarClassLoader.class.getClassLoader();
+                            for(String className : classData.keySet()) {
+                                JarClassLoader classLoader = new JarClassLoader(parent,classData.get(className));
+                                Class loaded = classLoader.loadClass(className);
+                                if(loaded == null) {
+                                    System.out.println("Failed to load class " + className);
+                                    continue;
+                                }
+                                final boolean assignableFrom = loaded.isAssignableFrom(Command.class);
+                                //after - put into commandfactory which extend command
+                                System.out.println("loaded " + loaded.getName());
+                            }
+
 
 
                         }
